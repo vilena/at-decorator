@@ -1,0 +1,138 @@
+<?xml version='1.0'?>
+<adtree>
+	<node refinement="conjunctive">
+		<label>Physical
+attacks-without
+opening ATM</label>
+		<node refinement="conjunctive">
+			<label>Approach
+ATM to
+prepare attack</label>
+			<node refinement="disjunctive">
+				<label>Get into
+facility</label>
+				<parameter domainId="ProbSucc1" category="basic">0.0</parameter>
+			</node>
+			<node refinement="conjunctive">
+				<label>Social
+engineering
+facility staff</label>
+				<parameter domainId="ProbSucc1" category="basic">0.25</parameter>
+			</node>
+		</node>
+		<node refinement="disjunctive">
+			<label>Execute
+attacks on
+ATM</label>
+			<node refinement="disjunctive">
+				<label>Fraud - Using
+special hardware</label>
+				<node refinement="conjunctive">
+					<label>Getting user&apos;s
+credential</label>
+					<node refinement="conjunctive">
+						<label>Get PIN
+&amp; CARD withdraw</label>
+						<node refinement="disjunctive">
+							<label>Get PIN</label>
+							<node refinement="conjunctive">
+								<label>Social
+engineer</label>
+								<parameter domainId="ProbSucc1" category="basic">0.1</parameter>
+							</node>
+							<node refinement="conjunctive">
+								<label>Shoulder
+surf</label>
+								<parameter domainId="ProbSucc1" category="basic">0.25</parameter>
+							</node>
+							<node refinement="conjunctive">
+								<label>Using
+camera</label>
+								<parameter domainId="ProbSucc1" category="basic">0.75</parameter>
+							</node>
+							<node refinement="conjunctive">
+								<label>EPP -
+Keyboard</label>
+								<node refinement="conjunctive">
+									<label>Install
+EPP</label>
+									<parameter domainId="ProbSucc1" category="basic">0.4</parameter>
+								</node>
+								<node refinement="conjunctive">
+									<label>remove
+EPP</label>
+									<parameter domainId="ProbSucc1" category="basic">0.9</parameter>
+								</node>
+							</node>
+						</node>
+						<node refinement="disjunctive">
+							<label>Get card</label>
+							<node refinement="conjunctive">
+								<label>Card
+Skimming</label>
+								<node refinement="conjunctive">
+									<label>Install
+skimmer</label>
+									<parameter domainId="ProbSucc1" category="basic">0.75</parameter>
+								</node>
+								<node refinement="conjunctive">
+									<label>clone
+card</label>
+									<parameter domainId="ProbSucc1" category="basic">0.75</parameter>
+								</node>
+							</node>
+							<node refinement="disjunctive">
+								<label>take card
+physically</label>
+								<node refinement="conjunctive">
+									<label>Card
+Trapping</label>
+									<parameter domainId="ProbSucc1" category="basic">0.16</parameter>
+								</node>
+								<node refinement="conjunctive">
+									<label>Steal
+card</label>
+									<parameter domainId="ProbSucc1" category="basic">0.05</parameter>
+								</node>
+							</node>
+							<node refinement="conjunctive">
+								<label>Social
+Engineering
+card owner</label>
+								<parameter domainId="ProbSucc1" category="basic">0.05</parameter>
+							</node>
+						</node>
+						<node refinement="conjunctive">
+							<label>use card</label>
+							<parameter domainId="ProbSucc1" category="basic">1.0</parameter>
+						</node>
+					</node>
+				</node>
+				<node refinement="conjunctive">
+					<label>Waiting for
+user&apos;s actions
+like
+authentication</label>
+					<node refinement="conjunctive">
+						<label>Cash
+Trapping</label>
+						<parameter domainId="ProbSucc1" category="basic">0.26</parameter>
+					</node>
+				</node>
+			</node>
+			<node refinement="conjunctive">
+				<label>Fraud - NOT
+using hardware</label>
+				<node refinement="conjunctive">
+					<label>Transaction
+Reversal</label>
+					<parameter domainId="ProbSucc1" category="basic">0.07</parameter>
+				</node>
+			</node>
+		</node>
+	</node>
+	<domain id="ProbSucc1">
+		<class>lu.uni.adtool.domains.adtpredefined.ProbSucc</class>
+		<tool>ADTool2</tool>
+	</domain>
+</adtree>
