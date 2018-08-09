@@ -6,18 +6,17 @@
 
 
 import xml.etree.ElementTree as ET
-#from z3 import *
 import os
-#from sets import Set
+
 
 
 # ### CONFIG
 
-atree = ET.parse('physical-attack-ATM-with-attributes.xml')
+atree = ET.parse('tree-partial-decoration.xml')
 #domain = 'MinTime'
 domain = 'Probability'
 
-z3output = 'z3inputfile-ATM.py'
+z3output = 'z3inputfile-ATM-partial-new.py'
 xmloutput = 'output-ATM.xml'
 
 
@@ -347,12 +346,15 @@ for element in var_nums:
 file.write('\n')
 file.write('s = Solver()\n')
 file.write("\n")
+file.write('s.set(unsat_core=True)\n')
     
 #file.close() 
 
 # z3 template:
 # s.add(v0 = v1 + v2 + v3)
 # s.add(v0 = min(v1,v2)) MIN will not work; replace with a workaround
+# s.assert_and_track(expr, str(expr)) -- to get unsat core
+
 
 for element in tree_constraints:
     top = element[0]
@@ -361,46 +363,58 @@ for element in tree_constraints:
     if (operator == 'conjunctive'):
         # AND = sum; 
         equation = domain_op_AND(top,element[2])
-        file.write("s.add(" + equation + ")" + "\n")
+        file.write("s.assert_and_track(" + equation + ", " + "str(" + equation + ")" + ")" + "\n")
     else:
         if (operator == 'disjunctive'):
             # OR = min
             equation = domain_op_OR(top,element[2])
-            file.write("s.add(" + equation + ")" + "\n")
+            file.write("s.assert_and_track(" + equation + ", " + "str(" + equation + ")" + ")" + "\n")
         else:
             if (operator == 'sequential'):
                 # SAND = sum
                 equation = domain_op_SAND(top,element[2])
-                file.write("s.add(" + equation + ")" + "\n")
+                file.write("s.assert_and_track(" + equation + ", " + "str(" + equation + ")" + ")" + "\n")
             else:
                 file.write("ERROR! Unexpected domain operator: %s\n", operator)
                 print("ERROR! Unexpected domain operator: %s\n", operator) 
 
 file.write('\n')
+file.write("# here come constraints on values defined in the attack tree \n")
+file.write("\n")
             
 for element in defined_leaves:
     var_num = element[0]
     value = element[1]
     equation = var_num + "==" + value
-    file.write("s.add(" + equation + ")" + "\n")
+    file.write("s.assert_and_track(" + equation + ", " + "str(" + equation + ")" + ")" + "\n")
 
 file.write("\n")
 file.write("# add your constraints here\n")
 file.write("\n")
 
 # z3 template:
-# print s.check()
-# m = s.model()
-# print "x = %s" % m[x]
-# 
-#print "traversing model..."
-#for d in m.decls():
-#    print "%s = %s" % (d.name(), m[d])
+#result = s.check() 
+#print result
+
+
+#if result == z3.sat: 
+#    m = s.model()
+#    for d in m.decls():
+        #print m[d].numerator_as_long()
+#        print "%s = %s" % (d.name(), float(m[d].numerator_as_long())/float(m[d].denominator_as_long())) 
+#elif result == z3.unsat:
+#    print s.unsat_core()
+#    print len(s.unsat_core())
     
-file.write("print s.check()\n")
-file.write("m = s.model()\n")
-file.write("for d in m.decls():\n")
-file.write('    print "%s = %s" % (d.name(), m[d]) \n')
+file.write("result = s.check()\n")
+file.write("print result\n")
+file.write("if result == z3.sat:\n")
+file.write("    m = s.model()\n")
+file.write('    for d in m.decls(): \n')
+file.write('        print "%s = %s" % (d.name(), float(m[d].numerator_as_long())/float(m[d].denominator_as_long())) \n')
+file.write("elif result == z3.unsat:\n")
+file.write("    print s.unsat_core()\n")
+
 
 file.close()
 
