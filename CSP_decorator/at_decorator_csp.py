@@ -235,7 +235,17 @@ def children(node):
 def get_child_value(node):
     # assuming it's a leaf node
     # assuming only one domain defined in the tree
-    value = node.find('parameter').text
+    if (node.find('parameter') != None):
+        value = node.find('parameter').text
+        return value
+    else:
+        return None
+
+def get_value(node):
+    if (node.find('parameter') != None):
+        value = node.find('parameter').text
+    else:
+        value = None
     return value
 
 
@@ -283,6 +293,7 @@ while (candidates != []):
     # get current candidate 
     node = candidates.pop()
     to_add = []
+    to_add1 = []
     # create an entry to describe equation
  
     if (not is_leaf(node)):
@@ -299,11 +310,16 @@ while (candidates != []):
         tree_constraints.append(to_add)
         # add children to the candidates list
         candidates.extend(childs)
+        if (get_value(node) != None):
+            to_add1.append(get_label(node))
+            to_add1.append(get_value(node))
+            defined_leaves.append(to_add1)
     else:
         # collect values defined on leaf nodes
-        to_add.append(get_label(node))
-        to_add.append(get_child_value(node))
-        defined_leaves.append(to_add)
+        if (get_child_value(node) != None ):
+            to_add.append(get_label(node))
+            to_add.append(get_child_value(node))
+            defined_leaves.append(to_add)
 
 print 'tree_constraints:'
 for element in tree_constraints:
@@ -329,12 +345,27 @@ file = open(z3output,"w")
 file.write("from z3 import *\n")
 file.write("\n")
 
+file.write('def is_number(s):\n')
+file.write('    try:\n')
+file.write('        float(s.numerator_as_long())\n')
+file.write('        return True\n')
+file.write('    except AttributeError:\n')
+file.write('        return False\n')
+
 # z3 template: 
 # def f(x):
 #    return If(x > 0, 1, 0)
 
 # z3 template:
 # x = Real('x')
+
+file.write("\n")
+file.write("# here is the node names mapping to variables\n")
+file.write("\n")
+mapping = get_tree_var_key(atree)
+for element in mapping:
+    file.write("# " + str(element) + "\n")
+file.write("\n")
  
 for element in var_nums:
     # add element + ' = Real(' + \' + element + ')' 
@@ -347,6 +378,21 @@ file.write('\n')
 file.write('s = Solver()\n')
 file.write("\n")
 file.write('s.set(unsat_core=True)\n')
+file.write("\n")
+
+
+
+for element in var_nums:
+    if (domain == 'Probability'):
+        # add constraints on values
+        file.write("s.add("+ element + ">=0, " + element + "<=1)\n") 
+    else:
+        if ((domain == 'MinCost') or (domain == 'MinTime')):
+            file.write("s.add("+ element + ">=0)\n")
+        else:
+            print("ERROR! Unsupported domain name: %s\n", domain)
+
+            file.write("\n")
     
 #file.close() 
 
@@ -355,7 +401,6 @@ file.write('s.set(unsat_core=True)\n')
 # s.add(v0 = min(v1,v2)) MIN will not work; replace with a workaround
 # s.assert_and_track(expr, str(expr)) -- to get unsat core
 
-
 for element in tree_constraints:
     top = element[0]
     operator = element[1]
@@ -363,34 +408,47 @@ for element in tree_constraints:
     if (operator == 'conjunctive'):
         # AND = sum; 
         equation = domain_op_AND(top,element[2])
-        file.write("s.assert_and_track(" + equation + ", " + "str(" + equation + ")" + ")" + "\n")
+        file.write("s.add(" + equation + ")" + "\n")
     else:
         if (operator == 'disjunctive'):
             # OR = min
             equation = domain_op_OR(top,element[2])
-            file.write("s.assert_and_track(" + equation + ", " + "str(" + equation + ")" + ")" + "\n")
+            file.write("s.add(" + equation + ")" + "\n")
         else:
             if (operator == 'sequential'):
                 # SAND = sum
                 equation = domain_op_SAND(top,element[2])
-                file.write("s.assert_and_track(" + equation + ", " + "str(" + equation + ")" + ")" + "\n")
+                file.write("s.add(" + equation + ")" + "\n")
             else:
                 file.write("ERROR! Unexpected domain operator: %s\n", operator)
                 print("ERROR! Unexpected domain operator: %s\n", operator) 
 
 file.write('\n')
-file.write("# here come constraints on values defined in the attack tree \n")
+file.write("# here come constraints on values defined in the attack tree file \n")
 file.write("\n")
+
+defined_vars = []
             
 for element in defined_leaves:
     var_num = element[0]
     value = element[1]
     equation = var_num + "==" + value
-    file.write("s.assert_and_track(" + equation + ", " + "str(" + equation + ")" + ")" + "\n")
+    new_bool_name = str(var_num) + '_pred'
+    defined_vars.append(new_bool_name)
+    file.write(new_bool_name + " = Bool('" + new_bool_name + "')\n")
+    #file.write("s.add(" + equation + ")" + "\n")
+    file.write("s.add(Implies(" + new_bool_name + ", " + equation + ")" + ")\n")
+    file.write("\n")
+
 
 file.write("\n")
 file.write("# add your constraints here\n")
 file.write("\n")
+file.write("# example for new constraint:\n")
+file.write("# p = Bool(p)\n")
+file.write("# s.add(Implies(p, v0 > 0)\n")
+file.write("\n")
+
 
 # z3 template:
 #result = s.check() 
@@ -405,13 +463,26 @@ file.write("\n")
 #elif result == z3.unsat:
 #    print s.unsat_core()
 #    print len(s.unsat_core())
-    
-file.write("result = s.check()\n")
+
+#file.write("result = s.check()\n")   
+file.write("\n")
+file.write("# please edit the set of constraints being checked (add or remove assertion names as needed)\n")
+
+file.write("result = s.check(")
+prepared_str = ''
+for element in defined_vars:
+    prepared_str = prepared_str + element + ","
+prepared_str = prepared_str[:-1]
+file.write(prepared_str + ")\n")
+file.write("\n")
 file.write("print result\n")
 file.write("if result == z3.sat:\n")
 file.write("    m = s.model()\n")
 file.write('    for d in m.decls(): \n')
-file.write('        print "%s = %s" % (d.name(), float(m[d].numerator_as_long())/float(m[d].denominator_as_long())) \n')
+file.write('        if (is_number(m[d])):\n')
+file.write('            print "%s = %s" % (d.name(), float(m[d].numerator_as_long())/float(m[d].denominator_as_long()))\n')
+file.write('        else:\n') 
+file.write('            print "%s = %s" % (d.name(), m[d])\n')
 file.write("elif result == z3.unsat:\n")
 file.write("    print s.unsat_core()\n")
 
