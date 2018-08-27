@@ -436,8 +436,7 @@ for element in defined_leaves:
     new_bool_name = str(var_num) + '_pred'
     defined_vars.append(new_bool_name)
     file.write(new_bool_name + " = Bool('" + new_bool_name + "')\n")
-    #file.write("s.add(" + equation + ")" + "\n")
-    file.write("s.add(Implies(" + new_bool_name + ", " + equation + ")" + ")\n")
+    file.write("s.assert_and_track(" + equation + ", " + new_bool_name  + ")\n")
     file.write("\n")
 
 
@@ -446,7 +445,7 @@ file.write("# add your constraints here\n")
 file.write("\n")
 file.write("# example for new constraint:\n")
 file.write("# p = Bool(p)\n")
-file.write("# s.add(Implies(p, v0 > 0)\n")
+file.write("# s.assert_and_track(v0 > v1, p)\n")
 file.write("\n")
 
 
@@ -468,13 +467,8 @@ file.write("\n")
 file.write("\n")
 file.write("# please edit the set of constraints being checked (add or remove assertion names as needed)\n")
 
-file.write("result = s.check(")
-prepared_str = ''
-for element in defined_vars:
-    prepared_str = prepared_str + element + ","
-prepared_str = prepared_str[:-1]
-file.write(prepared_str + ")\n")
-file.write("\n")
+file.write("result = s.check()\n")
+
 file.write("print result\n")
 file.write("if result == z3.sat:\n")
 file.write("    m = s.model()\n")
