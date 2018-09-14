@@ -16,7 +16,7 @@ atree = ET.parse('tree-partial-decoration.xml')
 #domain = 'MinTime'
 domain = 'Probability'
 
-z3output = 'z3inputfile-ATM-partial-new.py'
+z3output = 'z3inputfile-ATM-maximal.py'
 xmloutput = 'output-ATM.xml'
 
 
@@ -428,6 +428,7 @@ file.write("# here come constraints on values defined in the attack tree file \n
 file.write("\n")
 
 defined_vars = []
+dict = {}
             
 for element in defined_leaves:
     var_num = element[0]
@@ -435,10 +436,21 @@ for element in defined_leaves:
     equation = var_num + "==" + value
     new_bool_name = str(var_num) + '_pred'
     defined_vars.append(new_bool_name)
+    dict[new_bool_name] = equation
     file.write(new_bool_name + " = Bool('" + new_bool_name + "')\n")
     file.write("s.assert_and_track(" + equation + ", " + new_bool_name  + ")\n")
     file.write("\n")
 
+
+#file.write('dict = {')
+string = 'dict = {'
+for key, value in dict.items:
+    string = string + key + ': ' + '"' + value + '"' + ', '
+if (dict != {}):
+    string = string[:-3]
+string = string + '}'
+
+file.write(string + '\n')
 
 file.write("\n")
 file.write("# add your constraints here\n")
@@ -447,6 +459,7 @@ file.write("# example for new constraint:\n")
 file.write("# p = Bool(p)\n")
 file.write("# s.assert_and_track(v0 > v1, p)\n")
 file.write("\n")
+file.write("Please also add the newly declrared name of the predicate and the predicate string expression to the dictionary dict")
 
 
 # z3 template:
@@ -478,7 +491,29 @@ file.write('            print "%s = %s" % (d.name(), float(m[d].numerator_as_lon
 file.write('        else:\n') 
 file.write('            print "%s = %s" % (d.name(), m[d])\n')
 file.write("elif result == z3.unsat:\n")
-file.write("    print s.unsat_core()\n")
+file.write('    print  "The problem is unsatisfiable, here is an unsat core found by Z3 (not guaranteed to be minimum):"')
+file.write("    c = s.unsat_core()\n")
+file.write('    print c\n')
+file.write('    print "You can try to experiment with removing some less important unsat core predicates, but this is not guaranteed to provide a maximal solution"\n')
+file.write('    max_sol = get_maximal(s1, c, list_vars)\n')
+file.write('    print "Here is a maximal satisfiable subset of soft predicates: %s " % (max_sol[0]) \n')
+file.write('    print "A solution that satisifes this maximal subset is:"\n')
+file.write('    m = max_sol[1]\n')
+file.write('    for d in m.decls():\n')
+file.write('        if (is_number(m[d])):\n')
+file.write('            print "%s = %s" % (d.name(), float(m[d].numerator_as_long())/float(m[d].denominator_as_long()))\n')
+file.write('        else:\n')
+file.write('            print "%s = %s" % (d.name(), m[d])\n')
+file.write('    elif result == z3.unknown:\n')
+file.write('        print "Too complex problem to solve for Z3, for this reason:"\n')
+file.write('        print s.reason_unknown()\n')
+file.write('        print "You can try to remove some non-linear constraints or simplify them"\n')
+file.write('    else:\n')
+file.write('        print "Something went wrong"\n')
+file.write('        print "Please check the results of the solver"\n')
+
+
+
 
 
 file.close()
