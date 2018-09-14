@@ -351,6 +351,43 @@ file.write('        float(s.numerator_as_long())\n')
 file.write('        return True\n')
 file.write('    except AttributeError:\n')
 file.write('        return False\n')
+file.write("\n")
+
+file.write('def add_assertion(solv, var, expression):\n')
+file.write('    solv.assert_and_track(eval(expression), var)\n')
+file.write('    return \n')
+file.write("\n")
+
+file.write('def get_maximal(solv, unsatcore, list_vars):\n')
+file.write('    # solv is a solver with all hard constraints\n')
+file.write('    # unsat core is a set of soft predicates\n')
+file.write('    # list_vars is a list of names of all soft predicates\n')
+file.write('    curr = []\n')
+file.write('    current_max_set = []\n')
+file.write("\n")
+file.write('    for var in list_vars:\n')
+file.write('        if (var not in unsatcore):\n')
+file.write('            F = eval(dict[var])\n')
+file.write('            solv.add(F)\n')
+file.write('            curr.append(var)\n')
+file.write('    result = solv.check()\n')
+file.write("\n")
+file.write('    current_max_set = curr[:]\n')
+file.write('    current_model = solv.model()\n')
+file.write("\n")
+file.write('    for pred in unsatcore:\n')
+#file.write('        print "trying predicate %s" %(pred)\n')
+file.write('        F = eval(dict[pred])\n')
+file.write('        solv.add(F)\n')
+file.write('        solv.push()\n')
+file.write('        result = solv.check()\n')
+file.write('        if (result == z3.sat):\n')
+file.write('            current_max_set.append(pred)\n')
+file.write('            current_model = solv.model()\n')
+file.write('        else:\n')
+file.write('            solv.pop()\n') 
+file.write('    return [current_max_set, current_model]\n')
+file.write("\n")
 
 # z3 template: 
 # def f(x):
@@ -364,7 +401,7 @@ file.write("# here is the node names mapping to variables\n")
 file.write("\n")
 mapping = get_tree_var_key(atree)
 for element in mapping:
-    file.write("# " + str(element) + "\n")
+    file.write("# " + str(element[1]) + ': ' + str(element[0]) + "\n")
 file.write("\n")
  
 for element in var_nums:
@@ -375,9 +412,13 @@ for element in var_nums:
 # s = Solver()
 
 file.write('\n')
-file.write('s = Solver()\n')
+file.write("t = Then('simplify', 'qfnra-nlsat')\n")
+file.write('s = t.solver()\n')
+file.write('s1 = t.solver()\n')
+
 file.write("\n")
 file.write('s.set(unsat_core=True)\n')
+file.write('s1.set(unsat_core=True)\n')
 file.write("\n")
 
 
@@ -423,6 +464,9 @@ for element in tree_constraints:
                 file.write("ERROR! Unexpected domain operator: %s\n", operator)
                 print("ERROR! Unexpected domain operator: %s\n", operator) 
 
+file.write("\n")
+file.write("s1.add(s.assertions())\n")
+
 file.write('\n')
 file.write("# here come constraints on values defined in the attack tree file \n")
 file.write("\n")
@@ -442,25 +486,25 @@ for element in defined_leaves:
     file.write("\n")
 
 
-#file.write('dict = {')
-string = 'dict = {'
-for key, value in dict.items:
-    string = string + key + ': ' + '"' + value + '"' + ', '
-if (dict != {}):
-    string = string[:-3]
-string = string + '}'
-
-file.write(string + '\n')
-
 file.write("\n")
-file.write("# add your constraints here\n")
+file.write("# Add your own soft constraints here.\n")
 file.write("\n")
-file.write("# example for new constraint:\n")
+file.write("# Template for new constraint:\n")
 file.write("# p = Bool(p)\n")
 file.write("# s.assert_and_track(v0 > v1, p)\n")
 file.write("\n")
-file.write("Please also add the newly declrared name of the predicate and the predicate string expression to the dictionary dict")
+file.write("# Please also add the newly declrared name of the predicate and the predicate string expression to the dictionary dict below.\n")
 
+
+string = 'dict = {'
+for key, value in dict.items():
+    string = string + key + ': ' + '"' + value + '"' + ', '
+if (dict != {}):
+    string = string[:-2]
+string = string + '}'
+
+file.write(string + '\n')
+file.write("list_vars = list(dict.keys())\n")
 
 # z3 template:
 #result = s.check() 
@@ -477,12 +521,16 @@ file.write("Please also add the newly declrared name of the predicate and the pr
 #    print len(s.unsat_core())
 
 #file.write("result = s.check()\n")   
+#file.write("\n")
+#file.write("# please edit the set of constraints being checked (add or remove assertion names as needed)\n")
 file.write("\n")
-file.write("# please edit the set of constraints being checked (add or remove assertion names as needed)\n")
+file.write("\n")
+file.write("# Now Z3 checks satisfiability.\n")
+file.write("print 'You can find the mapping of variables to tree nodes in the Z3 input python file.'\n")
 
 file.write("result = s.check()\n")
-
 file.write("print result\n")
+file.write("\n")
 file.write("if result == z3.sat:\n")
 file.write("    m = s.model()\n")
 file.write('    for d in m.decls(): \n')
@@ -491,10 +539,10 @@ file.write('            print "%s = %s" % (d.name(), float(m[d].numerator_as_lon
 file.write('        else:\n') 
 file.write('            print "%s = %s" % (d.name(), m[d])\n')
 file.write("elif result == z3.unsat:\n")
-file.write('    print  "The problem is unsatisfiable, here is an unsat core found by Z3 (not guaranteed to be minimum):"')
+file.write('    print  "The problem is unsatisfiable, here is an unsat core found by Z3 (not guaranteed to be minimum):"\n')
 file.write("    c = s.unsat_core()\n")
 file.write('    print c\n')
-file.write('    print "You can try to experiment with removing some less important unsat core predicates, but this is not guaranteed to provide a maximal solution"\n')
+file.write('    print "You can try to experiment with removing some less important unsat core predicates, but this is not guaranteed to provide a maximal solution."\n')
 file.write('    max_sol = get_maximal(s1, c, list_vars)\n')
 file.write('    print "Here is a maximal satisfiable subset of soft predicates: %s " % (max_sol[0]) \n')
 file.write('    print "A solution that satisifes this maximal subset is:"\n')
@@ -504,13 +552,13 @@ file.write('        if (is_number(m[d])):\n')
 file.write('            print "%s = %s" % (d.name(), float(m[d].numerator_as_long())/float(m[d].denominator_as_long()))\n')
 file.write('        else:\n')
 file.write('            print "%s = %s" % (d.name(), m[d])\n')
-file.write('    elif result == z3.unknown:\n')
-file.write('        print "Too complex problem to solve for Z3, for this reason:"\n')
-file.write('        print s.reason_unknown()\n')
-file.write('        print "You can try to remove some non-linear constraints or simplify them"\n')
-file.write('    else:\n')
-file.write('        print "Something went wrong"\n')
-file.write('        print "Please check the results of the solver"\n')
+file.write('elif result == z3.unknown:\n')
+file.write('    print "Too complex problem to solve for Z3, for this reason:"\n')
+file.write('    print s.reason_unknown()\n')
+file.write('    print "You can try to remove some non-linear constraints or simplify them"\n')
+file.write('else:\n')
+file.write('    print "Something went wrong"\n')
+file.write('    print "Please check the results of the solver"\n')
 
 
 
