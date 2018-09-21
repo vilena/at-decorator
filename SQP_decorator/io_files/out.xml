@@ -1,0 +1,81 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<adtree>
+	<node refinement="conjunctive">
+		<label>ATM fraud</label>
+		<parameter category="basic" domainId="ProbSucc1">0.0046</parameter>
+		<node refinement="disjunctive">
+			<label>Access ATM to prepare attack</label>
+			<node index="0" refinement="disjunctive">
+				<label>Breaking into facility</label>
+			</node>
+			<node index="1" refinement="conjunctive">
+				<label>Social engineering facility staff</label>
+			</node>
+		</node>
+		<node refinement="disjunctive">
+			<label>Execute attacks on ATM</label>
+			<node index="2" refinement="conjunctive">
+				<label>Transaction Reversal</label>
+				<parameter category="basic" domainId="ProbSucc1">0.0038</parameter>
+			</node>
+			<node refinement="conjunctive">
+				<label>Get user's credentials</label>
+				<node refinement="disjunctive">
+					<label>Get PIN</label>
+					<node index="3" refinement="conjunctive">
+						<label>Shoulder surf</label>
+					</node>
+					<node index="4" refinement="conjunctive">
+						<label>Installing camera</label>
+					</node>
+					<node index="5" refinement="conjunctive">
+						<label>Install EPP</label>
+					</node>
+				</node>
+				<node refinement="disjunctive">
+					<label>Get card</label>
+					<node refinement="conjunctive">
+						<label>Card Skimming</label>
+						<parameter category="basic" domainId="ProbSucc1">0.0172</parameter>
+						<node index="6" refinement="conjunctive">
+							<label>Install skimmer</label>
+						</node>
+						<node index="7" refinement="conjunctive">
+							<label>Clone card</label>
+						</node>
+					</node>
+					<node refinement="disjunctive">
+						<label>take card physically</label>
+						<node index="8" refinement="conjunctive">
+							<label>Card Trapping</label>
+							<parameter category="basic" domainId="ProbSucc1">0.0094</parameter>
+						</node>
+						<node index="9" refinement="conjunctive">
+							<label>Steal card</label>
+						</node>
+					</node>
+					<node index="10" refinement="conjunctive">
+						<label>Social Engineering card owner</label>
+					</node>
+				</node>
+			</node>
+			<node index="11" refinement="conjunctive">
+				<label>Cash Trapping</label>
+				<parameter category="basic" domainId="ProbSucc1">0.015</parameter>
+			</node>
+		</node>
+	</node>
+	<domain id="ProbSucc1">
+		<class>lu.uni.adtool.domains.adtpredefined.ProbSucc</class>
+		<tool>ADTool2</tool>
+	</domain>
+	
+	<constraint id="ProbSucc1">
+		<greater leftNode="Card Skimming" rightNode="take card physically" />
+		<greater leftNode="Get user's credentials" rightNode="Transaction reversal" />
+		<greater leftNode="Shoulder surf" rightNode="Using Camera" />
+		<equal leftNode="Installing Camera" rightNode="Install EPP" />
+		<equal leftNode="Install EPP" rightNode="Install SkimmerEPP" />
+		<equal leftNode="Cash trapping" rightNode="Card trapping" />
+	</constraint>
+</adtree>
